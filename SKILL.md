@@ -54,9 +54,10 @@ sample`, not what the commands do.
 **Comments are rare and short.** Only where the line is genuinely non-obvious.
 Never restate what the command does.
 
-**Keep their variable names.** Non-English variable names stay exactly as
-written. Do not romanize or rename. New variables get short lowercase English
-names (`amount`, `suffix`, `age`, `birth_date`).
+**Keep their variable names.** Names that come from the source data stay
+exactly as written, including names in another language or script. Do not
+romanize or rename. New variables get short lowercase English names (`amount`,
+`suffix`, `age`, `birth_date`).
 
 **When these rules pull against the ones further down, shorter wins.** The
 correctness rules below add inspection lines such as `tab _merge` or `count if`.
@@ -69,16 +70,17 @@ When two approaches give the same result on clean data but differ on dirty data,
 prefer the one whose failure is visible in a `tab`. This matters more than
 brevity.
 
-Example: extracting the number from a string such as `1405.3584万人民币`.
+Example: extracting the number from a string such as
+`1405.3584 million USD`.
 
 ```stata
-gen amount = real(ustrregexs(1)) if ustrregexm(注册资本, "^([0-9.]+)")
-gen suffix = ustrregexs(1) if ustrregexm(注册资本, "^[0-9.]+(.*)$")
+gen amount = real(ustrregexs(1)) if ustrregexm(capital_raw, "^([0-9.]+)")
+gen suffix = ustrregexs(1) if ustrregexm(capital_raw, "^[0-9.]+(.*)$")
 ```
 
-is preferred over stripping all non-digits, because a row like `,404万(元)`
-shows up as a distinct category in `tab suffix` instead of being silently
-parsed as 404.
+is preferred over stripping all non-digits, because a row like
+`,404 million (est.)` shows up as a distinct category in `tab suffix` instead
+of being silently parsed as 404.
 
 **Merges are where dirty data most often slips through.** State the cardinality
 (`1:1`, `m:1`, `1:m`) and never write `m:m`; if it looks necessary, one side has
@@ -97,10 +99,12 @@ nogen`, and let the merge report do the counting.
 ## Stata specifics worth getting right
 
 **Non-ASCII strings need the `ustr` regex family.** `regexm` / `regexs` /
-`regexr` operate on bytes, so a UTF-8 character gets split and matches behave
-unpredictably. Use `ustrregexm`, `ustrregexs`, `ustrregexra` (replace all) and
-`ustrregexrf` (replace first). `ustrregexm` and `ustrregexs` must appear on the
-same line, since `ustrregexs` reads the most recent match.
+`regexr` operate on bytes, so a multi-byte UTF-8 character, an accented letter
+or a CJK character, gets split and matches behave unpredictably. Make the
+`ustr` family the default whenever a column may hold anything but plain ASCII:
+`ustrregexm`, `ustrregexs`, `ustrregexra` (replace all) and `ustrregexrf`
+(replace first). `ustrregexm` and `ustrregexs` must appear on the same line,
+since `ustrregexs` reads the most recent match.
 
 **The standard summary line:**
 
@@ -237,14 +241,15 @@ note.
 Right response:
 
 ```stata
-gen amount = real(ustrregexs(1)) if ustrregexm(注册资本, "^([0-9.]+)")
-gen suffix = ustrregexs(1) if ustrregexm(注册资本, "^[0-9.]+(.*)$")
+gen amount = real(ustrregexs(1)) if ustrregexm(capital_raw, "^([0-9.]+)")
+gen suffix = ustrregexs(1) if ustrregexm(capital_raw, "^[0-9.]+(.*)$")
 
 tab suffix
 ```
 
-plus one sentence noting that `ustrregexm` is required rather than `regexm`
-because of the non-ASCII characters.
+plus one sentence noting that the units and the currency are left in `suffix`
+on purpose, so that anything unexpected is visible in the `tab` rather than
+folded into `amount`.
 
 ## Reference files
 

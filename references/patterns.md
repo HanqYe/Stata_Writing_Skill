@@ -124,18 +124,18 @@ Industry HHI of each fund's portfolio, one row per fund.
 
 ```stata
 ****************Industry concentration of each fund's portfolio
-use "PC基本信息.dta", clear
-keep 统一社会信用代码PC 国标行业门类
-merge 1:m 统一社会信用代码PC using "对外投资PC_name1.dta"
+use "firm_info.dta", clear
+keep firm_id industry
+merge 1:m firm_id using "investments.dta"
 tab _merge
 keep if _merge == 3
-keep fundID 国标行业门类
+keep fundID industry
 
-count if 国标行业门类 == ""
+count if industry == ""
 
 bysort fundID: gen n = _N
-bysort fundID 国标行业门类: gen x = _N
-bysort fundID 国标行业门类: keep if _n == 1
+bysort fundID industry: gen x = _N
+bysort fundID industry: keep if _n == 1
 gen p = x / n
 bysort fundID: egen hhi_ind = total(p^2)
 bysort fundID: gen n_ind = _N
